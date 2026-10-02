@@ -3,6 +3,11 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# folder
+catboost_info/
+outputs_v4/
+__pycache__/
+
 # C extensions
 *.so
 
