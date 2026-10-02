@@ -5,6 +5,9 @@ import streamlit as st
 from model_support import predict_bundle
 
 st.set_page_config(page_title='Telco · Model comparison', page_icon='📡', layout='wide')
+import sklearn
+st.caption(f"Server scikit-learn: {sklearn.__version__}")
+
 st.title('📡 Telco customer predictions')
 st.write('Enter one customer profile and compare predictions from your group’s trained models.')
 st.caption('A churn flag uses each model’s own threshold. Scores are model estimates, not guarantees; class-weighted scores may not be calibrated probabilities.')
