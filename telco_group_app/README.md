@@ -209,4 +209,4 @@ Enter recorded total charges rather than calculating them from tenure and curren
 | Package version warning | Match the versions used during training and export. |
 | Streamlit is missing | Install it in the active Python environment. |
 | Exported file is missing | Check the notebook’s working directory using `Path.cwd()`. |
-| New model does not appear | Reload or restart the app. |
+| New model does not appear | Reload or restart the app. | 
