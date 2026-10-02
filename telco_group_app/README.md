@@ -1,45 +1,212 @@
-# Telco group model comparison
+# Telco Churn — Group Model Comparison
 
-One shared customer form, multiple fitted models, individual thresholds, comparison table, score chart and CSV download. No retraining happens in the app. No trained model is included: a notebook contains code and outputs, not its live fitted Python objects.
+An interactive Streamlit app that compares predictions from different group members’ trained models for the same customer.
 
-## 1. Export Lavanya’s exact V2 model
+Enter customer details such as tenure, charges, contract and services. Select the models and compare their churn scores and predictions.
 
-Run V2 through the cell that fits `final_model`. Put `model_support.py` next to the notebook (or add the app directory to Python's import path), then run:
+## Folder structure
+
+- `app.py` — Customer form and prediction results.
+- `model_support.py` — Feature preparation, model export and prediction helpers.
+- `models/` — Saved model bundles (`.joblib` files).
+- `requirements.txt` — Python dependencies.
+- `data/` — Optional local training dataset; not required by the app.
+- Training notebooks — Code used to train and export each member’s model.
+
+The `.gitkeep` file keeps an empty `models/` folder in Git. It does not affect predictions.
+
+## 1. Prepare your model
+
+Train your selected model in your notebook.
+
+Export the **complete fitted pipeline**, including preprocessing such as scaling, encoding and feature selection—not just a classifier trained on encoded arrays.
+
+The app supplies these original customer columns:
+
+```text
+gender, SeniorCitizen, Partner, Dependents, tenure,
+PhoneService, MultipleLines, InternetService,
+OnlineSecurity, OnlineBackup, DeviceProtection,
+TechSupport, StreamingTV, StreamingMovies,
+Contract, PaperlessBilling, PaymentMethod,
+MonthlyCharges, TotalCharges
+```
+
+`SeniorCitizen` is an integer: 0 or 1. Other categorical inputs use the standard Telco dataset values.
+
+If your model requires additional inputs, extend the form or provide an input adapter.
+
+## 2. Export your fitted model
+
+Make `model_support.py` available in your notebook’s working directory.
+
+For a fitted pipeline that accepts the original customer columns:
 
 ```python
 from model_support import export_bundle
-export_bundle('models/lavanya_v2.joblib', final_model,
-              member='Lavanya', threshold=final_threshold,
-              feature_mode='lavanya_v2', positive_label=1)
+
+export_bundle(
+    path="models/member_name.joblib",
+    model=fitted_pipeline,
+    member="Member name",
+    threshold=selected_threshold,
+    feature_mode="raw",
+    positive_label=1
+)
 ```
 
-V2 sets `final_threshold = 0.57`. It uses balanced logistic regression with StandardScaler, OneHotEncoder and three externally engineered features. This app reproduces InternetAddonCount, AutomaticPayment and NewMonthToMonth exactly and retains the original service columns. Copy the resulting bundle into this app's models/ directory.
+Replace:
 
-## 2. Add group members
+- `member_name.joblib` with a unique filename.
+- `fitted_pipeline` with your fitted pipeline variable.
+- `Member name` with your name.
+- `selected_threshold` with your model’s chosen threshold.
+- `positive_label` with the class label representing churn. Use `"Yes"` if your target labels are `"Yes"` and `"No"`.
 
-Each member must export their FITTED complete preprocessing + classifier pipeline, accepting the original Telco DataFrame columns:
+The model must support `predict_proba` and expose `classes_`.
+
+The exported bundle contains the fitted pipeline, member name, threshold and input settings.
+
+### Models with engineered features
+
+Normally, use `feature_mode="raw"` and include feature engineering inside your pipeline.
+
+Custom transformers must be defined in importable Python modules that are included with the app.
+
+For the existing V2 model, use:
 
 ```python
-from model_support import export_bundle
-export_bundle('models/member_name.joblib', fitted_pipeline,
-              member='Member name', threshold=0.5,
-              feature_mode='raw', positive_label=1)
+export_bundle(
+    path="models/lavanya_v2.joblib",
+    model=final_model,
+    member="Lavanya",
+    threshold=final_threshold,
+    feature_mode="lavanya_v2",
+    positive_label=1
+)
 ```
 
-Replace 0.5 with that member's actual frozen threshold. If Churn was trained as Yes/No strings, use positive_label='Yes'. Do not pass only an estimator trained on encoded arrays; package its fitted preprocessing too. Custom feature engineering should live in that member’s pipeline, with custom classes/functions in importable modules shipped with the app. PyCaret pipelines can be exported if they accept raw DataFrames and provide classes_ and predict_proba; other wrappers may need an adapter. Extra input columns require extending the form. Multiple models per member are supported with separate filenames.
+This feature mode adds:
 
-Export with the same Python/scikit-learn/pandas/numpy and other model-library versions as the app environment. Prefer that all group members use one shared environment; replace requirements.txt version ranges with the actual matching versions. Add xgboost/lightgbm/catboost etc. if required by your saved pipelines. Only put trusted group model files in models/: joblib uses pickle and executes code when loading. The public app intentionally has no model-file uploader.
+- `InternetAddonCount`
+- `AutomaticPayment`
+- `NewMonthToMonth`
 
-## 3. Run
+Use it only for models trained with those exact engineered inputs. The existing V2 threshold is **0.57**. Every other model should use its own chosen threshold.
+
+Models from other frameworks may require an adapter to match the app’s prediction interface.
+
+## 3. Add models to the app
+
+Place each exported bundle inside `models/`, using distinct filenames:
+
+```text
+models/
+  lavanya_v2.joblib
+  member_2.joblib
+  member_3.joblib
+```
+
+The app automatically discovers `.joblib` files.
+
+A full merge of everyone’s training branches is not required. The app needs their exported model bundles, required dependencies and any custom transformer modules.
+
+## 4. Install dependencies
+
+Activate your Python environment, then run from the app folder:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-streamlit run app.py
+python -m pip install -r requirements.txt
 ```
 
-For Streamlit Community Cloud, commit app.py, model_support.py, requirements.txt, required custom modules and trusted models/*.joblib to your repository. Set app.py as the entry point. No CSV or training data is required for inference.
+Use compatible package versions for training, export and app execution. Ideally, all members use the same environment.
 
-Scores from balanced classifiers need not be calibrated probabilities. The UI labels a score over the saved cutoff as “Churn flagged”; a 0.57 cutoff does not mean every flagged customer has over 50% true churn probability. App comparisons are demonstrations, not an accuracy ranking. Evaluate group models on a common holdout to compare performance.
+Add any additional model libraries, such as XGBoost, LightGBM or CatBoost, to `requirements.txt`. Pin matching versions before deployment.
+
+If only Streamlit is missing:
+
+```bash
+python -m pip install streamlit
+```
+
+## 5. Run the app
+
+From the directory containing `app.py`:
+
+```bash
+python -m streamlit run app.py
+```
+
+Open the Local URL printed in the terminal.
+
+1. Select the models to compare.
+2. Enter the customer’s details.
+3. Click **Compare predictions**.
+
+Results include:
+
+- Each model’s churn score.
+- Each model’s saved threshold.
+- Churn flag or predicted stay.
+- A score comparison chart.
+- Downloadable prediction results.
+
+The app loads trained models without retraining them.
+
+## 6. Share through Git
+
+Commit the app code, README, dependencies, trusted model bundles and any required custom modules to the shared app branch.
+
+Keep local datasets and generated outputs ignored unless the group intends to share them.
+
+Example entries in the repository’s `.gitignore`:
+
+```gitignore
+telco_group_app/data/
+__pycache__/
+catboost_info/
+outputs_v4/
+```
+
+Do not ignore the model bundles if they need to be included for deployment.
+
+Only load trusted model files. Loading `.joblib` files can execute Python code.
+
+## 7. Deploy on Streamlit
+
+Choose the repository and shared app branch.
+
+If the app is inside `telco_group_app/`, use this entry point:
+
+```text
+telco_group_app/app.py
+```
+
+Include model bundles, compatible dependencies and custom modules in the repository.
+
+The training CSV is not needed for deployment.
+
+## Understanding predictions
+
+A churn score at or above a model’s saved threshold produces **Churn flagged**. Otherwise, it produces **Predicted stay**.
+
+Scores are estimates, not guarantees. Scores from class-weighted models may not be calibrated probabilities.
+
+Different models may use different thresholds, so similar scores can produce different decisions.
+
+This app compares predictions, not model accuracy. To compare accuracy, evaluate all models on the same labeled holdout using agreed metrics.
+
+Enter recorded total charges rather than calculating them from tenure and current monthly charges.
+
+## Troubleshooting
+
+| Problem | Check |
+|---|---|
+| No models appear | Put exported bundles in the `models/` folder beside `app.py`. |
+| Missing bundle field | Export using `export_bundle`, rather than saving only the classifier. |
+| Missing input column | Match the model’s input schema or extend the form. |
+| Custom transformer cannot load | Include its importable Python module. |
+| Package version warning | Match the versions used during training and export. |
+| Streamlit is missing | Install it in the active Python environment. |
+| Exported file is missing | Check the notebook’s working directory using `Path.cwd()`. |
+| New model does not appear | Reload or restart the app. |
