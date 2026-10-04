@@ -1,0 +1,72 @@
+COMPARISON OF LAVANYA’S AND DANIAL’S MODELS
+
+Both models use logistic regression to predict whether a customer will stay or churn.
+
+1. CUSTOMER INFORMATION
+
+Lavanya:
+Keeps the original customer information and adds three indicators:
+- Number of internet add-ons.
+- Whether payment is automatic.
+- Whether the customer has been subscribed for six months or less and has a month-to-month contract.
+
+Danial:
+Simplifies the contract and payment categories instead of adding those indicators.
+
+2. CONTRACT TYPES
+
+Lavanya:
+Keeps month-to-month, one-year and two-year contracts separate.
+
+Danial:
+Combines one-year and two-year contracts into “Yearly.”
+Keeps month-to-month contracts separate.
+
+3. PAYMENT METHODS
+
+Lavanya:
+Keeps the original payment methods and adds an automatic-payment indicator.
+
+Danial:
+Keeps electronic checks separate and groups the other payment methods together.
+
+4. MISSING VALUES
+
+Lavanya:
+Sets missing total charges to zero for customers with zero months of tenure.
+
+Danial:
+Estimates missing numerical values using similar customers.
+
+5. MODEL TRAINING
+
+Lavanya:
+Gives churners extra weight during training.
+Uses 80% of the data for training and 20% for testing.
+
+Danial:
+Uses default weighting.
+Uses 70% of the data for training and 30% for testing.
+
+6. PREDICTION CUTOFF
+
+Lavanya:
+Flags churn when the model’s churn score is 0.57 or higher.
+
+Danial:
+Flags churn when the model’s churn score is 0.50 or higher.
+
+7. HOW THE APP COMPARES THEM
+
+The app gives both models the same customer details.
+Each model prepares those details using its own method.
+The app displays their scores and decisions side by side.
+
+Different features, training settings and cutoffs can lead to different predictions. The scores are estimates, not guarantees.
+
+8. IMPORTANT LIMITATION
+
+This comparison describes how the models work, not which is better.
+A fair performance comparison requires the same test data and evaluation metrics.
+
+Danial’s exported logistic regression is provisional until he confirms his final model.
